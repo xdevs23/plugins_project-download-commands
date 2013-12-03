@@ -135,7 +135,7 @@ public class DownloadCommandUpdater implements GitReferenceUpdatedListener,
     if (dc != null) {
       dc.add(p, command);
     } else {
-      dc = new ProjectDownloadCommand(p, command);
+      dc = new ProjectDownloadCommand(projectCache, p, command);
       projectDownloadCommands.put(name, dc);
       registrationHandles.put(name,
           map().put(pluginName, name.replaceAll("-", " "), provider(dc)));

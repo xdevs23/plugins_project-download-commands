@@ -14,23 +14,29 @@
 
 package com.googlesource.gerrit.plugins.download.command.project;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.google.gerrit.extensions.config.DownloadCommand;
 import com.google.gerrit.extensions.config.DownloadScheme;
 import com.google.gerrit.reviewdb.client.Project;
+import com.google.gerrit.server.project.ProjectCache;
+import com.google.gerrit.server.project.ProjectState;
 
 import java.util.Map;
 
 public class ProjectDownloadCommand extends DownloadCommand {
+  private final ProjectCache projectCache;
   private final Map<Project.NameKey, String> commands;
 
-  ProjectDownloadCommand(Project.NameKey project, String command) {
+  ProjectDownloadCommand(ProjectCache projectCache, Project.NameKey project,
+      String command) {
+    this.projectCache = projectCache;
     this.commands = Maps.newHashMap();
     add(project, command);
   }
 
   public void add(Project.NameKey project, String command) {
-    commands.put(project, command);
+    commands.put(project, Strings.nullToEmpty(command));
   }
 
   public void remove(Project.NameKey project) {
@@ -43,12 +49,24 @@ public class ProjectDownloadCommand extends DownloadCommand {
 
   @Override
   public String getCommand(DownloadScheme scheme, String project, String ref) {
-    String command = commands.get(new Project.NameKey(project));
+    Project.NameKey projectName = new Project.NameKey(project);
+    String command = commands.get(projectName);
+    if (command == null) {
+      ProjectState projectState = projectCache.get(projectName);
+      if (projectState != null) {
+        for (ProjectState parent : projectState.parents()) {
+          command = commands.get(parent.getProject().getNameKey());
+          if (command != null) {
+            break;
+          }
+        }
+      }
+    }
     if (command != null) {
       command = command.replaceAll("\\$\\{ref\\}", ref)
           .replaceAll("\\$\\{url\\}", scheme.getUrl(project))
           .replaceAll("\\$\\{project\\}", project);
     }
-    return command;
+    return Strings.emptyToNull(command);
   }
 }
