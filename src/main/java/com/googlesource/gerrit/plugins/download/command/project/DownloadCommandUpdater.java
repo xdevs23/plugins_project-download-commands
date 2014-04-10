@@ -23,8 +23,8 @@ import com.google.gerrit.extensions.registration.DynamicMap;
 import com.google.gerrit.extensions.registration.PrivateInternals_DynamicMapImpl;
 import com.google.gerrit.extensions.registration.RegistrationHandle;
 import com.google.gerrit.reviewdb.client.Project;
+import com.google.gerrit.reviewdb.client.RefNames;
 import com.google.gerrit.server.config.PluginConfig;
-import com.google.gerrit.server.git.GitRepositoryManager;
 import com.google.gerrit.server.git.MetaDataUpdate;
 import com.google.gerrit.server.git.ProjectConfig;
 import com.google.gerrit.server.git.WorkQueue;
@@ -92,7 +92,7 @@ public class DownloadCommandUpdater implements GitReferenceUpdatedListener,
 
   @Override
   public void onGitReferenceUpdated(Event event) {
-    if (event.getRefName().equals(GitRepositoryManager.REF_CONFIG)) {
+    if (event.getRefName().equals(RefNames.REFS_CONFIG)) {
       Project.NameKey p = new Project.NameKey(event.getProjectName());
       try {
         ProjectConfig oldCfg =
@@ -112,7 +112,7 @@ public class DownloadCommandUpdater implements GitReferenceUpdatedListener,
         }
       } catch (IOException | ConfigInvalidException e) {
         log.error("Failed to update download commands for project "
-            + p.get() + " on update of " + GitRepositoryManager.REF_CONFIG, e);
+            + p.get() + " on update of " + RefNames.REFS_CONFIG, e);
       }
     }
   }
