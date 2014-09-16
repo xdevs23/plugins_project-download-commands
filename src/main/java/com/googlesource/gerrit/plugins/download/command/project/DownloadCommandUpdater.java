@@ -73,12 +73,22 @@ public class DownloadCommandUpdater implements GitReferenceUpdatedListener,
 
   @Override
   public void start() {
-    for (Project.NameKey p : projectCache.all()) {
-      ProjectState projectState = projectCache.get(p);
-      if (projectState != null) {
-        installCommandAsync(projectState);
+    executor.submit(new Runnable() {
+      @Override
+      public void run() {
+        for (Project.NameKey p : projectCache.all()) {
+          ProjectState projectState = projectCache.get(p);
+          if (projectState != null) {
+            PluginConfig cfg =
+                projectState.getConfig().getPluginConfig(pluginName);
+            for (String name : cfg.getNames()) {
+              installCommand(projectState.getProject().getNameKey(), name,
+                  cfg.getString(name));
+            }
+          }
+        }
       }
-    }
+    });
   }
 
   @Override
@@ -115,18 +125,6 @@ public class DownloadCommandUpdater implements GitReferenceUpdatedListener,
             + p.get() + " on update of " + RefNames.REFS_CONFIG, e);
       }
     }
-  }
-
-  private void installCommandAsync(final ProjectState p) {
-    executor.submit(new Runnable() {
-      @Override
-      public void run() {
-        PluginConfig cfg = p.getConfig().getPluginConfig(pluginName);
-        for (String name : cfg.getNames()) {
-          installCommand(p.getProject().getNameKey(), name, cfg.getString(name));
-        }
-      }
-    });
   }
 
   private void installCommand(final Project.NameKey p, String name,
